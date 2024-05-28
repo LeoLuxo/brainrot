@@ -6,7 +6,10 @@ version    = "0.1.0"
 
 [features]
 default = []
-macros  = []
+
+angle = []
+# camera = ["angle"]
+macros = []
 
 [dev-dependencies]
 approx = "0.5.1"

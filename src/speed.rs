@@ -6,6 +6,7 @@ use std::{
 	time::Duration,
 };
 
+#[cfg(feature = "angle")]
 use crate::angle::{Angle, AngleType};
 
 /*
@@ -112,11 +113,13 @@ pub trait DurationConverter {
 
 #[rustfmt::skip] impl                                                 DurationConverter for f32          {type Output = f32; fn as_secs(d: Duration) -> Self::Output {d.as_secs_f32()}}
 #[rustfmt::skip] impl                                                 DurationConverter for f64          {type Output = f64; fn as_secs(d: Duration) -> Self::Output {d.as_secs_f64()}}
-#[rustfmt::skip] impl<T: DurationConverter<Output = T>, U: AngleType> DurationConverter for Angle<T, U>  {type Output = T;   fn as_secs(d: Duration) -> Self::Output {T::as_secs(d)}}
 #[rustfmt::skip] impl<T: DurationConverter<Output = T>>               DurationConverter for Speed<T>     {type Output = T;   fn as_secs(d: Duration) -> Self::Output {T::as_secs(d)}}
 #[rustfmt::skip] impl<T: DurationConverter<Output = T>>               DurationConverter for vek::Vec2<T> {type Output = T;   fn as_secs(d: Duration) -> Self::Output {T::as_secs(d)}}
 #[rustfmt::skip] impl<T: DurationConverter<Output = T>>               DurationConverter for vek::Vec3<T> {type Output = T;   fn as_secs(d: Duration) -> Self::Output {T::as_secs(d)}}
 #[rustfmt::skip] impl<T: DurationConverter<Output = T>>               DurationConverter for vek::Vec4<T> {type Output = T;   fn as_secs(d: Duration) -> Self::Output {T::as_secs(d)}}
+
+#[cfg(feature = "angle")]
+#[rustfmt::skip] impl<T: DurationConverter<Output = T>, U: AngleType> DurationConverter for Angle<T, U>  {type Output = T;   fn as_secs(d: Duration) -> Self::Output {T::as_secs(d)}}
 
 /*
 --------------------------------------------------------------------------------
@@ -127,17 +130,23 @@ pub trait DurationConverter {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::angle::{AngleDegreesType, Degrees};
 	use approx::assert_relative_eq;
 
 	#[test]
-	#[rustfmt::skip]
 	fn test_duration_mult() {
 		assert_relative_eq!(Speed::new(10., Duration::new(1, 0)) * Duration::new(1, 0), 10.);
 		assert_relative_eq!(Speed::new(0.1, Duration::new(1, 0)) * Duration::new(1, 0), 0.1);
 		assert_relative_eq!(Speed::new_per_second(10.) * Duration::new(1, 0), 10.);
 		assert_relative_eq!(Speed::new_per_second(0.1) * Duration::new(1, 0), 0.1);
+	}
 
+	#[cfg(feature = "angle")]
+	use crate::angle::{AngleDegreesType, Degrees};
+
+	#[test]
+	#[rustfmt::skip]
+	#[cfg(feature = "angle")]
+	fn test_duration_mult_angle() {
 		assert_relative_eq!((Speed::new(Degrees::new(10.), Duration::new(1, 0)) * Duration::new(1, 0)).degrees(), 10.);
 		assert_relative_eq!((Speed::new(Degrees::new(0.1), Duration::new(1, 0)) * Duration::new(1, 0)).degrees(), 0.1);
 		assert_relative_eq!((Speed::new_per_second(Degrees::new(10.)) * Duration::new(1, 0)).degrees(), 10.);
