@@ -7,8 +7,8 @@ version    = "0.1.0"
 [features]
 default = []
 
-angle = []
-# camera = ["angle"]
+angle  = []
+camera = ["angle"]
 macros = []
 
 [dev-dependencies]
