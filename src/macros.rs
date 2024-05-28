@@ -1,3 +1,4 @@
+#[cfg(feature = "angle")]
 #[macro_export]
 macro_rules! deg {
 	($value:expr) => {{
@@ -5,6 +6,7 @@ macro_rules! deg {
 	}};
 }
 
+#[cfg(feature = "angle")]
 #[macro_export]
 macro_rules! rad {
 	($value:expr) => {{
@@ -12,6 +14,7 @@ macro_rules! rad {
 	}};
 }
 
+#[cfg(feature = "speed")]
 #[macro_export]
 macro_rules! spd {
 	($value:expr) => {{
