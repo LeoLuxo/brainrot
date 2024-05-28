@@ -4,6 +4,10 @@ name       = "computil"
 repository = "https://github.com/LeoLuxo/computil"
 version    = "0.1.0"
 
+[features]
+default = []
+macros  = []
+
 [dev-dependencies]
 approx = "0.5.1"
 rstest = "0.19.0"

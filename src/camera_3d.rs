@@ -76,60 +76,68 @@ pub fn calc_projection_matrix(Frustum { y_fov, z_near, z_far }: Frustum, Extent2
 
 #[cfg(test)]
 mod tests {
-	use crate::deg;
 
 	use super::*;
-	use crate::angle::Angle;
+	use crate::angle::{Angle, Degrees};
 	use approx::assert_relative_eq;
 	use rstest::rstest;
 	use std::f32::consts::FRAC_1_SQRT_2;
 	use vek::Vec3;
 
 	#[rstest]
-	#[case(deg!(0.),   Vec3::new(0., 0., 1.))]
-	#[case(deg!(90.),  Vec3::new(1., 0., 0.))]
-	#[case(deg!(180.), Vec3::new(0., 0., -1.))]
-	#[case(deg!(-90.), Vec3::new(-1., 0., 0.))]
+	#[case(Degrees::new(0.).into(),   Vec3::new(0., 0., 1.))]
+	#[case(Degrees::new(90.).into(),  Vec3::new(1., 0., 0.))]
+	#[case(Degrees::new(180.).into(), Vec3::new(0., 0., -1.))]
+	#[case(Degrees::new(-90.).into(), Vec3::new(-1., 0., 0.))]
 	fn camera_forward_horizonal(#[case] yaw: Angle, #[case] expected: Vec3<f32>) {
 		assert_relative_eq!(
-			calc_forward_horizontal_vector(Direction { yaw, pitch: deg!(0.) }),
+			calc_forward_horizontal_vector(Direction {
+				yaw,
+				pitch: Degrees::new(0.).into()
+			}),
 			expected
 		);
 	}
 
 	#[rstest]
-	#[case(deg!(0.),   deg!(0.),   Vec3::new(0., 0., 1.))]
-	#[case(deg!(90.),  deg!(0.),   Vec3::new(1., 0., 0.))]
-	#[case(deg!(180.), deg!(0.),   Vec3::new(0., 0., -1.))]
-	#[case(deg!(270.), deg!(0.),   Vec3::new(-1., 0., 0.))]
-	#[case(deg!(0.),   deg!(90.),  Vec3::new(0., 1., 0.))]
-	#[case(deg!(0.),   deg!(-90.), Vec3::new(0., -1., 0.))]
-	#[case(deg!(180.), deg!(90.),  Vec3::new(0., 1., 0.))]
-	#[case(deg!(180.), deg!(-90.), Vec3::new(0., -1., 0.))]
-	#[case(deg!(45.),  deg!(45.),  Vec3::new(0.5, FRAC_1_SQRT_2, 0.5))]
+	#[case(Degrees::new(0.).into(),   Degrees::new(0.).into(),   Vec3::new(0., 0., 1.))]
+	#[case(Degrees::new(90.).into(),  Degrees::new(0.).into(),   Vec3::new(1., 0., 0.))]
+	#[case(Degrees::new(180.).into(), Degrees::new(0.).into(),   Vec3::new(0., 0., -1.))]
+	#[case(Degrees::new(270.).into(), Degrees::new(0.).into(),   Vec3::new(-1., 0., 0.))]
+	#[case(Degrees::new(0.).into(),   Degrees::new(90.).into(),  Vec3::new(0., 1., 0.))]
+	#[case(Degrees::new(0.).into(),   Degrees::new(-90.).into(), Vec3::new(0., -1., 0.))]
+	#[case(Degrees::new(180.).into(), Degrees::new(90.).into(),  Vec3::new(0., 1., 0.))]
+	#[case(Degrees::new(180.).into(), Degrees::new(-90.).into(), Vec3::new(0., -1., 0.))]
+	#[case(Degrees::new(45.).into(),  Degrees::new(45.).into(),  Vec3::new(0.5, FRAC_1_SQRT_2, 0.5))]
 	fn camera_forward(#[case] yaw: Angle, #[case] pitch: Angle, #[case] expected: Vec3<f32>) {
 		assert_relative_eq!(calc_forward_vector(Direction { yaw, pitch }), expected);
 	}
 
 	#[rstest]
-	#[case(deg!(0.),   Vec3::new(1., 0., 0.))]
-	#[case(deg!(90.),  Vec3::new(0., 0., -1.))]
-	#[case(deg!(180.), Vec3::new(-1., 0., 0.))]
-	#[case(deg!(270.), Vec3::new(0., 0., 1.))]
+	#[case(Degrees::new(0.).into(),   Vec3::new(1., 0., 0.))]
+	#[case(Degrees::new(90.).into(),  Vec3::new(0., 0., -1.))]
+	#[case(Degrees::new(180.).into(), Vec3::new(-1., 0., 0.))]
+	#[case(Degrees::new(270.).into(), Vec3::new(0., 0., 1.))]
 	fn camera_right(#[case] yaw: Angle, #[case] expected: Vec3<f32>) {
-		assert_relative_eq!(calc_right_vector(Direction { yaw, pitch: deg!(0.) }), expected);
+		assert_relative_eq!(
+			calc_right_vector(Direction {
+				yaw,
+				pitch: Degrees::new(0.).into()
+			}),
+			expected
+		);
 	}
 
 	#[rstest]
-	#[case(deg!(0.),   deg!(0.),   Vec3::new(0., 1., 0.))]
-	#[case(deg!(90.),  deg!(0.),   Vec3::new(0., 1., 0.))]
-	#[case(deg!(180.), deg!(0.),   Vec3::new(0., 1., 0.))]
-	#[case(deg!(-90.), deg!(0.),   Vec3::new(0., 1., 0.))]
-	#[case(deg!(0.),   deg!(90.),  Vec3::new(0., 0., -1.))]
-	#[case(deg!(0.),   deg!(-90.), Vec3::new(0., 0., 1.))]
-	#[case(deg!(180.), deg!(90.),  Vec3::new(0., 0., 1.))]
-	#[case(deg!(180.), deg!(-90.), Vec3::new(0., 0., -1.))]
-	#[case(deg!(45.),  deg!(45.),  Vec3::new(-0.5, FRAC_1_SQRT_2, -0.5))]
+	#[case(Degrees::new(0.).into(),   Degrees::new(0.).into(),   Vec3::new(0., 1., 0.))]
+	#[case(Degrees::new(90.).into(),  Degrees::new(0.).into(),   Vec3::new(0., 1., 0.))]
+	#[case(Degrees::new(180.).into(), Degrees::new(0.).into(),   Vec3::new(0., 1., 0.))]
+	#[case(Degrees::new(-90.).into(), Degrees::new(0.).into(),   Vec3::new(0., 1., 0.))]
+	#[case(Degrees::new(0.).into(),   Degrees::new(90.).into(),  Vec3::new(0., 0., -1.))]
+	#[case(Degrees::new(0.).into(),   Degrees::new(-90.).into(), Vec3::new(0., 0., 1.))]
+	#[case(Degrees::new(180.).into(), Degrees::new(90.).into(),  Vec3::new(0., 0., 1.))]
+	#[case(Degrees::new(180.).into(), Degrees::new(-90.).into(), Vec3::new(0., 0., -1.))]
+	#[case(Degrees::new(45.).into(),  Degrees::new(45.).into(),  Vec3::new(-0.5, FRAC_1_SQRT_2, -0.5))]
 	fn camera_up(#[case] yaw: Angle, #[case] pitch: Angle, #[case] expected: Vec3<f32>) {
 		assert_relative_eq!(calc_up_vector(Direction { yaw, pitch }), expected);
 	}
