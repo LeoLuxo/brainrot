@@ -10,6 +10,7 @@ default = []
 angle  = []
 camera = ["angle"]
 macros = []
+speed  = []
 tuples = []
 
 [dev-dependencies]
