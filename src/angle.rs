@@ -61,20 +61,6 @@ pub trait AngleRadiansType<T> {
 --------------------------------------------------------------------------------
 */
 
-#[macro_export]
-macro_rules! deg {
-	($value:expr) => {{
-		$crate::angle::Degrees::new($value).into()
-	}};
-}
-
-#[macro_export]
-macro_rules! rad {
-	($value:expr) => {{
-		$crate::angle::Radians::new($value).into()
-	}};
-}
-
 impl<T, U: AngleType> Angle<T, U> {
 	pub fn new(value: T) -> Self {
 		Self {
