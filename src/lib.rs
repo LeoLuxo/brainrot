@@ -1,4 +1,6 @@
 pub mod speed;
+
+#[cfg(feature = "tuples")]
 pub mod tuples;
 
 #[cfg(feature = "angle")]

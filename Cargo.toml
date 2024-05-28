@@ -10,6 +10,7 @@ default = []
 angle  = []
 camera = ["angle"]
 macros = []
+tuples = []
 
 [dev-dependencies]
 approx = "0.5.1"
