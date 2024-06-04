@@ -1,7 +1,7 @@
 [package]
 edition    = "2021"
-name       = "computil"
-repository = "https://github.com/LeoLuxo/computil"
+name       = "brainrot"
+repository = "https://github.com/LeoLuxo/brainrot"
 version    = "0.1.0"
 
 [features]

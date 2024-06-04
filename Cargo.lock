@@ -200,6 +200,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "brainrot"
+version = "0.1.0"
+dependencies = [
+ "approx",
+ "bevy_ecs",
+ "derive_more",
+ "mint",
+ "paste",
+ "rstest",
+ "vek",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -216,19 +229,6 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
-
-[[package]]
-name = "computil"
-version = "0.1.0"
-dependencies = [
- "approx",
- "bevy_ecs",
- "derive_more",
- "mint",
- "paste",
- "rstest",
- "vek",
-]
 
 [[package]]
 name = "concurrent-queue"
