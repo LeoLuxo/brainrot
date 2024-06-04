@@ -1,6 +1,6 @@
 use std::f32::consts;
 
-use derive_more::{Deref, Display, From};
+use derive_more::{Deref, Display, From, Into};
 use vek::{Extent2, Mat4, Vec3};
 
 use crate::angle::Angle;
@@ -11,9 +11,10 @@ use crate::angle::Angle;
 --------------------------------------------------------------------------------
 */
 
-type ScreenSize = vek::Extent2<u32>;
+#[derive(Deref, From, Into, Display, Copy, Clone, Debug, Default, PartialEq)]
+pub struct ScreenSize(pub Extent2<u32>);
 
-#[derive(Deref, From, Display, Copy, Clone, Debug, Default, PartialEq)]
+#[derive(Deref, From, Into, Display, Copy, Clone, Debug, Default, PartialEq)]
 pub struct Position(pub Vec3<f32>);
 
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -64,8 +65,29 @@ pub fn calc_view_matrix(Position(position): Position, direction: Direction) -> M
 	Mat4::look_at_lh(position, position + calc_forward_vector(direction), Vec3::unit_y())
 }
 
-pub fn calc_projection_matrix(Frustum { y_fov, z_near, z_far }: Frustum, Extent2 { w, h }: ScreenSize) -> Mat4<f32> {
+pub fn calc_projection_matrix(
+	Frustum { y_fov, z_near, z_far }: Frustum,
+	ScreenSize(Extent2 { w, h }): ScreenSize,
+) -> Mat4<f32> {
 	Mat4::perspective_fov_lh_zo(y_fov, w as f32, h as f32, z_near, z_far)
+}
+
+/*
+--------------------------------------------------------------------------------
+||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+--------------------------------------------------------------------------------
+*/
+
+#[cfg(feature = "bevy_ecs")]
+mod bevy_ecs {
+	use bevy_ecs::component::{Component, TableStorage};
+
+	use super::{Direction, Frustum, Position, ScreenSize};
+
+	#[rustfmt::skip] impl Component for ScreenSize {type Storage = TableStorage;}
+	#[rustfmt::skip] impl Component for Position   {type Storage = TableStorage;}
+	#[rustfmt::skip] impl Component for Direction  {type Storage = TableStorage;}
+	#[rustfmt::skip] impl Component for Frustum    {type Storage = TableStorage;}
 }
 
 /*
