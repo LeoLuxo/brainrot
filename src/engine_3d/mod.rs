@@ -1,5 +1,9 @@
 #[cfg(feature = "camera")]
-pub(crate) mod camera_3d;
+mod camera_3d;
+#[cfg(feature = "camera")]
+pub use camera_3d::*;
 
 #[cfg(feature = "texture")]
-pub(crate) mod texture;
+mod texture;
+#[cfg(feature = "texture")]
+pub use texture::*;

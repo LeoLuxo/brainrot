@@ -1,8 +1,14 @@
 #[cfg(feature = "angle")]
-pub(crate) mod angle;
+mod angle;
+#[cfg(feature = "angle")]
+pub use angle::*;
 
 #[cfg(feature = "speed")]
-pub(crate) mod speed;
+mod speed;
+#[cfg(feature = "speed")]
+pub use speed::*;
 
 #[cfg(feature = "tuples")]
-pub(crate) mod tuples;
+mod tuples;
+#[cfg(feature = "tuples")]
+pub use tuples::*;

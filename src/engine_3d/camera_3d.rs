@@ -5,7 +5,7 @@ use std::f32::consts;
 use derive_more::{Deref, Display, From, Into};
 use vek::{Extent2, Mat4, Vec3};
 
-use crate::math::angle::Angle;
+use crate::math::Angle;
 
 /*
 --------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ pub use bevy::*;
 mod tests {
 
 	use super::*;
-	use crate::math::angle::{Angle, Degrees};
+	use crate::math::{Angle, Degrees};
 	use approx::assert_relative_eq;
 	use rstest::rstest;
 	use std::f32::consts::FRAC_1_SQRT_2;
