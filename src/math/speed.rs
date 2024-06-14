@@ -7,7 +7,7 @@ use std::{
 };
 
 #[cfg(feature = "angle")]
-use crate::angle::{Angle, AngleType};
+use crate::math::angle::{Angle, AngleType};
 
 /*
 --------------------------------------------------------------------------------
@@ -141,7 +141,7 @@ mod tests {
 	}
 
 	#[cfg(feature = "angle")]
-	use crate::angle::{AngleDegreesType, Degrees};
+	use crate::math::angle::{AngleDegreesType, Degrees};
 
 	#[test]
 	#[rustfmt::skip]

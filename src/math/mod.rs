@@ -1,8 +1,8 @@
 #[cfg(feature = "angle")]
-mod angle;
+pub(crate) mod angle;
 
 #[cfg(feature = "speed")]
-mod speed;
+pub(crate) mod speed;
 
 #[cfg(feature = "tuples")]
-mod tuples;
+pub(crate) mod tuples;

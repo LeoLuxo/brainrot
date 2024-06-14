@@ -9,14 +9,14 @@ version    = "0.1.0"
 default = []
 
 angle   = []
+bevy    = ["dep:bevy_ecs"]
 camera  = ["angle"]
 macros  = []
 speed   = ["vek"]
-texture = []
+texture = ["dep:image", "dep:wgpu"]
 tuples  = []
 
-bevy_ecs = ["dep:bevy_ecs"]
-vek      = ["dep:vek"]
+vek = ["dep:vek"]
 
 
 [dev-dependencies]
@@ -25,8 +25,12 @@ rstest = "0.21.0"
 
 
 [dependencies]
-bevy_ecs    = { version = "0.13.2", optional = true }
-derive_more = "0.99.17"
-mint        = "0.5.9"
-paste       = "1.0.14"
-vek         = { version = "0.17.0", features = ["bytemuck", "mint", "rgb", "rgba", "serde", "uv", "uvw"], optional = true }
+bevy_ecs = { version = "=0.13.2", optional = true }
+image    = { version = "0.25", default-features = false, optional = true }
+vek      = { version = "0.17", features = ["bytemuck", "mint", "rgb", "rgba", "serde", "uv", "uvw"], optional = true }
+wgpu     = { version = "0.20.1", optional = true }
+
+anyhow      = "1.0"
+derive_more = "0.99"
+downcast-rs = "1.2"
+paste       = "1.0"

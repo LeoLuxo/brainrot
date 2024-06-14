@@ -2,7 +2,7 @@
 #[macro_export]
 macro_rules! deg {
 	($value:expr) => {{
-		$crate::angle::Degrees::new($value).into()
+		$crate::math::angle::Degrees::new($value).into()
 	}};
 }
 
@@ -10,7 +10,7 @@ macro_rules! deg {
 #[macro_export]
 macro_rules! rad {
 	($value:expr) => {{
-		$crate::angle::Radians::new($value).into()
+		$crate::math::angle::Radians::new($value).into()
 	}};
 }
 

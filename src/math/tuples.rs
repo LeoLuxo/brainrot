@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 #[rustfmt::skip]
 pub trait TupleMath<T> {
 	fn at_least_1(&self, _pred: impl Fn(T) -> bool) -> bool {false}

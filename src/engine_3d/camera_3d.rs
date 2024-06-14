@@ -1,9 +1,11 @@
+#![allow(dead_code)]
+
 use std::f32::consts;
 
 use derive_more::{Deref, Display, From, Into};
 use vek::{Extent2, Mat4, Vec3};
 
-use crate::angle::Angle;
+use crate::math::angle::Angle;
 
 /*
 --------------------------------------------------------------------------------
@@ -78,8 +80,8 @@ pub fn calc_projection_matrix(
 --------------------------------------------------------------------------------
 */
 
-#[cfg(feature = "bevy_ecs")]
-mod bevy_ecs {
+#[cfg(feature = "bevy")]
+mod bevy {
 	use bevy_ecs::component::{Component, TableStorage};
 
 	use super::{Direction, Frustum, Position, ScreenSize};
@@ -90,17 +92,19 @@ mod bevy_ecs {
 	#[rustfmt::skip] impl Component for Frustum    {type Storage = TableStorage;}
 }
 
+#[cfg(feature = "bevy")]
+pub use bevy::*;
+
 /*
 --------------------------------------------------------------------------------
 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 --------------------------------------------------------------------------------
 */
-
 #[cfg(test)]
 mod tests {
 
 	use super::*;
-	use crate::angle::{Angle, Degrees};
+	use crate::math::angle::{Angle, Degrees};
 	use approx::assert_relative_eq;
 	use rstest::rstest;
 	use std::f32::consts::FRAC_1_SQRT_2;

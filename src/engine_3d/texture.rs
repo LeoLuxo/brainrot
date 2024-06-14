@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use anyhow::{Ok, Result};
 use image::GenericImageView;
 use vek::Extent2;
