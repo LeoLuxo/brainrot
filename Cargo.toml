@@ -4,24 +4,29 @@ name       = "brainrot"
 repository = "https://github.com/LeoLuxo/brainrot"
 version    = "0.1.0"
 
-[features]
-default = []
 
-angle    = []
-bevy_ecs = []
-camera   = ["angle"]
-macros   = []
-speed    = []
-texture  = []
-tuples   = []
+[features]
+default = ["speed"]
+
+angle   = []
+camera  = ["angle"]
+macros  = []
+speed   = ["vek"]
+texture = []
+tuples  = []
+
+bevy_ecs = ["dep:bevy_ecs"]
+vek      = ["dep:vek"]
+
 
 [dev-dependencies]
 approx = "0.5.1"
 rstest = "0.21.0"
 
+
 [dependencies]
-bevy_ecs    = "0.13.2"
+bevy_ecs    = { version = "0.13.2", optional = true }
 derive_more = "0.99.17"
 mint        = "0.5.9"
 paste       = "1.0.14"
-vek         = { version = "0.17.0", features = ["bytemuck", "mint", "rgb", "rgba", "serde", "uv", "uvw"] }
+vek         = { version = "0.17.0", features = ["bytemuck", "mint", "rgb", "rgba", "serde", "uv", "uvw"], optional = true }

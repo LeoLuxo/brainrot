@@ -4,9 +4,14 @@ pub use crate::math::*;
 mod engine_3d;
 pub use crate::engine_3d::*;
 
+// Import macros and re-export under the brainrot::... namespace
 #[cfg(feature = "macros")]
 mod macros;
 
 #[cfg(feature = "macros")]
 #[allow(unused_imports)]
 pub use crate::macros::*;
+
+// Re-export vek under brainrot::vek
+#[cfg(feature = "vek")]
+pub use vek;
