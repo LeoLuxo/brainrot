@@ -12,6 +12,7 @@ bevy_ecs = []
 camera   = ["angle"]
 macros   = []
 speed    = []
+texture  = []
 tuples   = []
 
 [dev-dependencies]
