@@ -1,3 +1,10 @@
+#[macro_export]
+macro_rules! src {
+	($value:expr) => {
+		concat!(env!("CARGO_MANIFEST_DIR"), "/src/", $value)
+	};
+}
+
 #[cfg(feature = "angle")]
 #[macro_export]
 macro_rules! deg {
