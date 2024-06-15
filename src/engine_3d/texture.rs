@@ -15,15 +15,13 @@ use wgpu::{
 --------------------------------------------------------------------------------
 */
 
-pub struct Texture {
+pub struct TextureAsset {
 	pub texture: wgpu::Texture,
 	pub view: TextureView,
 	pub sampler: Sampler,
 }
 
-// TODO: Make an AssetHandler or something
-
-impl Texture {
+impl TextureAsset {
 	pub const DEPTH_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
 	pub fn from_bytes(device: &Device, queue: &Queue, bytes: &[u8], label: Option<&str>) -> Result<Self> {
@@ -127,7 +125,7 @@ impl Texture {
 */
 
 pub struct TextureArray {
-	pub textures: Vec<Texture>,
+	pub textures: Vec<TextureAsset>,
 }
 
 impl TextureArray {
@@ -135,7 +133,7 @@ impl TextureArray {
 		let mut textures = Vec::new();
 
 		for (bytes, label) in array {
-			textures.push(Texture::from_bytes(device, queue, bytes, label)?);
+			textures.push(TextureAsset::from_bytes(device, queue, bytes, label)?);
 		}
 
 		Ok(TextureArray { textures })
@@ -150,7 +148,7 @@ impl TextureArray {
 		let mut textures = Vec::new();
 
 		for (image, label) in array {
-			textures.push(Texture::from_image(device, queue, image, label)?);
+			textures.push(TextureAsset::from_image(device, queue, image, label)?);
 		}
 
 		Ok(TextureArray { textures })
