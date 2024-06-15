@@ -1,7 +1,18 @@
 #[macro_export]
 macro_rules! src {
-	($value:expr) => {
-		concat!(env!("CARGO_MANIFEST_DIR"), "/src/", $value)
+	($file:expr) => {
+		concat!(env!("CARGO_MANIFEST_DIR"), "/src/", $file)
+	};
+}
+
+#[cfg(feature = "shader")]
+#[macro_export]
+macro_rules! shader {
+	($file:expr) => {
+		ShaderFile {
+			file_name: $file,
+			shader_source: include_str!(src!($file)),
+		}
 	};
 }
 
