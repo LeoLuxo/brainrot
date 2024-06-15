@@ -22,49 +22,54 @@ macro_rules! spd {
 	}};
 }
 
+#[cfg(feature = "vek")]
 #[macro_export]
 macro_rules! v {
 	($x:expr,$y:expr) => {{
-		vek::Vec2::new($x, $y)
+		brainrot::vek::Vec2::new($x, $y)
 	}};
 	($x:expr,$y:expr,$z:expr) => {{
-		vek::Vec3::new($x, $y, $z)
+		brainrot::vek::Vec3::new($x, $y, $z)
 	}};
 	($x:expr,$y:expr,$z:expr,$w:expr) => {{
-		vek::Vec4::new($x, $y, $z, $w)
+		brainrot::vek::Vec4::new($x, $y, $z, $w)
 	}};
 }
 
+#[cfg(feature = "vek")]
 #[macro_export]
 macro_rules! vec2 {
 	($x:expr) => {{
-		vek::Vec2::new($x, $x)
+		brainrot::vek::Vec2::new($x, $x)
 	}};
 	($x:expr,$y:expr) => {{
-		vek::Vec2::new($x, $y)
+		brainrot::vek::Vec2::new($x, $y)
 	}};
 }
 
+#[cfg(feature = "vek")]
 #[macro_export]
 macro_rules! vec3 {
 	($x:expr) => {{
-		vek::Vec3::new($x, $x, $x)
+		brainrot::vek::Vec3::new($x, $x, $x)
 	}};
 	($x:expr,$y:expr,$z:expr) => {{
-		vek::Vec3::new($x, $y, $z)
+		brainrot::vek::Vec3::new($x, $y, $z)
 	}};
 }
 
+#[cfg(feature = "vek")]
 #[macro_export]
 macro_rules! vec4 {
 	($x:expr) => {{
-		vek::Vec3::new($x, $x, $x, $x)
+		brainrot::vek::Vec3::new($x, $x, $x, $x)
 	}};
 	($x:expr,$y:expr,$z:expr,$w:expr) => {{
-		vek::Vec4::new($x, $y, $z, $w)
+		brainrot::vek::Vec4::new($x, $y, $z, $w)
 	}};
 }
 
+#[cfg(feature = "vek")]
 #[macro_export]
 macro_rules! size {
 	($x:expr,$y:expr) => {{
