@@ -7,9 +7,7 @@ use bevy_ecs::{
 	world::{FromWorld, World},
 };
 
-use super::*;
-
-use super::plugin::Plugin;
+use super::{plugin::Plugin, *};
 
 /*
 --------------------------------------------------------------------------------
