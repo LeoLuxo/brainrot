@@ -9,7 +9,7 @@ macro_rules! src {
 #[macro_export]
 macro_rules! shader {
 	($file:expr) => {
-		ShaderFile {
+		$crate::engine_3d::ShaderFile {
 			file_name: $file,
 			shader_source: include_str!(src!($file)),
 		}

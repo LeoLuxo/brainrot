@@ -5,7 +5,6 @@ use wgpu::ShaderSource;
 use wgpu::{Device, ShaderModule, ShaderModuleDescriptor};
 
 use crate::src;
-use include_dir::{include_dir, Dir};
 
 use anyhow::Result;
 use anyhow::{anyhow, Ok};
@@ -18,8 +17,8 @@ use anyhow::{anyhow, Ok};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct ShaderFile<'a> {
-	file_name: &'a str,
-	shader_source: &'a str,
+	pub file_name: &'a str,
+	pub shader_source: &'a str,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -35,6 +34,7 @@ impl ShaderBuilder {
 
 	pub fn from_source(shader_file: ShaderFile) -> Self {
 		Self::new().include(shader_file)
+		// TODO Change this to take dynamic &str instead of static ShaderFile and make the constructor of shaderbuilder take SHADER_FILES
 	}
 
 	pub fn include(self, shader_file: ShaderFile) -> Self {
@@ -48,15 +48,13 @@ impl ShaderBuilder {
 			return self;
 		}
 
-		self.source.insert_str(byte_position, &shader_file.shader_source);
+		self.source.insert_str(byte_position, shader_file.shader_source);
 
 		self.files.insert(shader_file.file_name.to_owned());
 		self
 	}
 
 	pub fn build(mut self, device: &Device, shader_files: &[ShaderFile]) -> Result<ShaderModule> {
-		// let asd = PROJECT_DIR.files().next().unwrap().contents_utf8();
-
 		self.process_includes(shader_files)?;
 
 		let shader_module = device.create_shader_module(ShaderModuleDescriptor {
