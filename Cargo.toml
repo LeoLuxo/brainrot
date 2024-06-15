@@ -8,14 +8,14 @@ version    = "0.1.0"
 [features]
 default = []
 
-angle   = []
-bevy    = ["dep:bevy_ecs"]
-camera  = ["angle"]
-convert = ["dep:egui", "dep:mint", "dep:winit", "egui/mint", "vek", "winit/mint"]
-macros  = []
-speed   = ["vek"]
-texture = ["dep:image", "dep:wgpu"]
-tuples  = []
+angle     = []
+bevy      = ["dep:bevy_ecs"]
+camera_3d = ["angle", "vek"]
+convert   = ["dep:egui", "dep:mint", "dep:winit", "egui/mint", "vek", "winit/mint"]
+macros    = []
+speed     = ["vek"]
+texture   = ["dep:image", "dep:wgpu"]
+tuples    = []
 
 vek = ["dep:vek"]
 

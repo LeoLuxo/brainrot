@@ -108,7 +108,7 @@ mod tests {
 	use approx::assert_relative_eq;
 	use rstest::rstest;
 	use std::f32::consts::FRAC_1_SQRT_2;
-	use vek::Vec3;
+	use vek::{num_traits::Float, Vec3};
 
 	#[rstest]
 	#[case(Degrees::new(0.).into(),   Vec3::new(0., 0., 1.))]

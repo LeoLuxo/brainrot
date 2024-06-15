@@ -9,7 +9,7 @@ macro_rules! src {
 #[macro_export]
 macro_rules! deg {
 	($value:expr) => {{
-		$crate::math::angle::Degrees::new($value).into()
+		$crate::math::Degrees::new($value).into()
 	}};
 }
 
@@ -17,7 +17,7 @@ macro_rules! deg {
 #[macro_export]
 macro_rules! rad {
 	($value:expr) => {{
-		$crate::math::angle::Radians::new($value).into()
+		$crate::math::Radians::new($value).into()
 	}};
 }
 
@@ -25,7 +25,7 @@ macro_rules! rad {
 #[macro_export]
 macro_rules! spd {
 	($value:expr) => {{
-		$crate::math::speed::Speed::new_per_second($value).into()
+		$crate::math::Speed::new_per_second($value).into()
 	}};
 }
 
