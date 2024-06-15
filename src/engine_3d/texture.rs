@@ -158,13 +158,6 @@ impl TextureArray {
 		self.textures.iter().map(|t| &t.sampler).collect()
 	}
 
-
-
-
-
-
-
-
 	pub fn get_views(&self) -> Vec<&TextureView> {
 		self.textures.iter().map(|t| &t.view).collect()
 	}
