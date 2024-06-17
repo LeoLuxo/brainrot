@@ -3,7 +3,6 @@
 
 macro_rules! reexport_feature_module {
 	($module:ident) => {
-		// use $crate::paste::paste;
 		paste::paste! {
 			#[cfg(feature = "" $module "")]
 			mod $module;
@@ -11,6 +10,12 @@ macro_rules! reexport_feature_module {
 			pub use $module::*;
 		}
 	};
+}
+
+// Re-export certain crates needed by brainrot so that they can be used in macros
+pub mod lib_crates {
+	pub use paste;
+	pub use phf;
 }
 
 pub mod engine_3d;

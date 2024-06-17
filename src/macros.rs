@@ -7,13 +7,53 @@ macro_rules! src {
 
 #[cfg(feature = "shader")]
 #[macro_export]
-macro_rules! shader {
+macro_rules! include_shader {
 	($file:expr) => {
 		$crate::engine_3d::ShaderFile {
 			file_name: $file,
-			shader_source: include_str!(src!($file)),
+			shader_source: include_str!(concat!(env!("CARGO_MANIFEST_DIR"), $file)),
 		}
 	};
+}
+
+#[cfg(feature = "shader")]
+#[macro_export]
+macro_rules! build_shader_dir {
+	($dir:expr) => {{
+		use std::env;
+		use std::fs::read_to_string;
+		use std::fs::File;
+		use std::io::{BufWriter, Write};
+		use std::path::Path;
+
+		// Tell Cargo that if the directory changes, to rerun this build script.
+		println!(concat!("cargo::rerun-if-changed=", $dir));
+
+		let path = Path::new(&env::var("OUT_DIR").unwrap()).join("shader_dir.rs");
+		let mut out_file = BufWriter::new(File::create(&path).unwrap());
+
+		let shader_files = glob::glob(concat!(env!("CARGO_MANIFEST_DIR"), "/", $dir, "**/*")).unwrap();
+		let mut map = phf_codegen::Map::<String>::new();
+
+		for entry in shader_files {
+			let path_buf = if let Ok(path) = entry { path } else { continue };
+
+			let source = read_to_string(&path_buf).unwrap();
+			let path = path_buf.to_str().unwrap().to_owned();
+
+			map.entry(path, "\"" + &source + "\"");
+		}
+
+		write!(&mut out_file, "{};", map.build()).unwrap();
+	}};
+}
+
+#[cfg(feature = "shader")]
+#[macro_export]
+macro_rules! include_shader_dir {
+	() => {{
+		include!(concat!(env!("OUT_DIR"), "/shader_dir.rs"));
+	}};
 }
 
 #[cfg(feature = "angle")]
