@@ -3,7 +3,7 @@
 #[macro_export]
 macro_rules! path {
 	($path:expr) => {
-		typed_path::Utf8TypedPath::derive($path).to_path_buf()
+		$crate::lib_crates::typed_path::Utf8TypedPath::derive($path).to_path_buf()
 	};
 }
 
@@ -31,6 +31,8 @@ macro_rules! src_path {
 #[macro_export]
 macro_rules! rooted_path {
 	($path:expr) => {
-		Utf8UnixPath::new("/").join($path).normalize()
+		$crate::lib_crates::typed_path::Utf8UnixPath::new("/")
+			.join($path)
+			.normalize()
 	};
 }

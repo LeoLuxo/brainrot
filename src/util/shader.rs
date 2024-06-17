@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::{collections::HashSet, fs::read_to_string, ops::Range};
 
-use egui::ahash::HashMap;
 use hashlink::{LinkedHashMap, LinkedHashSet};
 use regex::Regex;
 use typed_path::{Utf8Path, Utf8UnixPath, Utf8UnixPathBuf};
@@ -43,11 +42,11 @@ macro_rules! build_shader_map {
 		// Tell Cargo that if the directory changes, to rerun this build script.
 		println!("cargo::rerun-if-changed={}", dir);
 
-		let mut map = phf_codegen::Map::<String>::new();
+		let mut map = $crate::lib_crates::phf_codegen::Map::<String>::new();
 		// Set the path that will be printed in the resulting source to the phf re-export (so that it isn't needed in the destination lib)
 		map.phf_path("brainrot::lib_crates::phf");
 
-		let shader_files = glob::glob(absolute_dir.join("**/*").as_str()).unwrap();
+		let shader_files = $crate::lib_crates::glob::glob(absolute_dir.join("**/*").as_str()).unwrap();
 
 		for entry in shader_files {
 			let path_buf = if let Ok(path) = entry {
@@ -151,9 +150,6 @@ impl<'a> ShaderBuilder<'a> {
 		blacklist: &mut HashSet<Utf8UnixPathBuf>,
 		shader_map: &ShaderMap,
 	) -> Result<String> {
-		println!("blacklist: {:?}", blacklist);
-		println!("file: {:?}, is included: {}", file, blacklist.contains(&file));
-
 		// Check that the file wasn't already included
 		if blacklist.contains(&file) {
 			// Not an error, just includes empty source

@@ -15,8 +15,11 @@ macro_rules! reexport_feature_module {
 
 // Re-export certain crates needed by brainrot so that they can be used in macros
 pub mod lib_crates {
+	pub use glob;
 	pub use paste;
 	pub use phf;
+	pub use phf_codegen;
+	pub use typed_path;
 }
 
 mod util;
