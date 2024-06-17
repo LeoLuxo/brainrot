@@ -7,7 +7,22 @@ use std::{
 };
 
 #[cfg(feature = "angle")]
-use crate::math::angle::{Angle, AngleType};
+use crate::{Angle, AngleType};
+
+/*
+--------------------------------------------------------------------------------
+||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+--------------------------------------------------------------------------------
+*/
+
+// Macros
+
+#[macro_export]
+macro_rules! spd {
+	($value:expr) => {{
+		$crate::Speed::new_per_second($value).into()
+	}};
+}
 
 /*
 --------------------------------------------------------------------------------
@@ -141,7 +156,7 @@ mod tests {
 	}
 
 	#[cfg(feature = "angle")]
-	use crate::math::angle::{AngleDegreesType, Degrees};
+	use crate::{AngleDegreesType, Degrees};
 
 	#[test]
 	#[rustfmt::skip]

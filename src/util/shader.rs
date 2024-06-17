@@ -14,20 +14,33 @@ use wgpu::{Device, ShaderModule, ShaderModuleDescriptor};
 use anyhow::Result;
 use anyhow::{anyhow, Ok};
 
-use crate::{path, rooted_path};
-
 /*
 --------------------------------------------------------------------------------
 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 --------------------------------------------------------------------------------
 */
 
-// // pub fn normalize_file_path(file: &str) -> String {
-// // 	// Normalize the file path
-// // 	let file_path = PathBuf::from_str(file).expect("File not a valid path");
-// // 	let file: String = file_path.to_string_lossy().into().replace(r#"\\"#, "/");
-// // 	file
-// // }
+// Macros
+
+#[macro_export]
+macro_rules! include_shader_dir {
+	() => {{
+		todo!()
+	}};
+}
+
+#[macro_export]
+macro_rules! build_shader_dir {
+	() => {{
+		todo!()
+	}};
+}
+
+/*
+--------------------------------------------------------------------------------
+||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+--------------------------------------------------------------------------------
+*/
 
 pub type ShaderMap = crate::lib_crates::phf::Map<&'static str, &'static str>;
 
@@ -38,9 +51,9 @@ pub struct ShaderBuilder<'a> {
 }
 
 impl<'a> ShaderBuilder<'a> {
-	pub fn new(shader_dir: &'a ShaderMap) -> Self {
+	pub fn new(shader_map: &'a ShaderMap) -> Self {
 		Self {
-			shader_map: shader_dir,
+			shader_map,
 			included_files: HashSet::default(),
 		}
 	}
@@ -118,25 +131,25 @@ impl<'a> ShaderBuilder<'a> {
 
 		// Replace the include statements in the source with the actual source of each file
 		for (path_str, range) in includes {
+			// Offset the range by byte_offset
 			let range = (range.start as isize + byte_offset) as usize..(range.end as isize + byte_offset) as usize;
 
+			// Fix up the path
 			let path_relative: Utf8UnixPathBuf = path!(&path_str)
 				.try_into()
 				.or(Err(anyhow!("Invalid file `{}`", path_str)))?;
 			let path_absolute = rooted_path!(parent_path.join(path_relative));
 
+			// Recursively build the source of the included file
 			let source_to_include = Self::build_individual_source(path_absolute, blacklist, shader_map)?;
 
-			// Get the byte-size of the file to be inserted, to shift the other insertions
+			// Get the byte-size of the file to be inserted, to shift the other insertions afterwards
 			byte_offset += (source_to_include.len() as isize) - (range.len() as isize);
 
 			// Replace the whole range with the included file source
 			source.replace_range(range, &source_to_include);
-
-			println!("\n\n\nnot final:{}", source);
 		}
 
-		println!("\n\n\nFINAL:\n{}", source);
 		Ok(source)
 	}
 }

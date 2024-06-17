@@ -6,20 +6,18 @@ version    = "0.1.0"
 
 
 [features]
-default = ["macros", "path", "tuples"]
+default = ["path", "tuples"]
 
 angle     = []
 bevy      = ["dep:bevy_ecs"]
-camera_3d = ["angle", "vek"]
-convert   = ["dep:egui", "dep:mint", "dep:winit", "egui/mint", "vek", "winit/mint"]
-macros    = []
+camera_3d = ["angle", "vec"]
+convert   = ["dep:egui", "dep:mint", "dep:winit", "egui/mint", "vec", "winit/mint"]
 path      = ["dep:typed-path"]
 shader    = ["dep:wgpu"]
-speed     = ["vek"]
+speed     = ["vec"]
 texture   = ["dep:image", "dep:wgpu"]
 tuples    = []
-
-vek = ["dep:vek"]
+vec       = ["dep:vek"]
 
 
 [dev-dependencies]
