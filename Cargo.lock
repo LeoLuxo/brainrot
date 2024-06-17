@@ -360,6 +360,7 @@ dependencies = [
  "phf",
  "regex",
  "rstest",
+ "typed-path",
  "vek",
  "wgpu",
  "winit",
@@ -1933,6 +1934,12 @@ name = "ttf-parser"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c591d83f69777866b9126b24c6dd9a18351f177e49d625920d19f989fd31cf8"
+
+[[package]]
+name = "typed-path"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8a3023f4683cd1a846dbd2666e8c34f54338ee5cebae578cda981a87cecd7aa"
 
 [[package]]
 name = "typeid"

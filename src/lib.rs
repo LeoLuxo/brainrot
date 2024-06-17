@@ -25,12 +25,9 @@ pub mod math;
 #[cfg(feature = "bevy")]
 pub mod bevy;
 
-// Import macros and re-export under the brainrot::... namespace
+// Imported macros are automatically re-exported under the brainrot::... namespace
 #[cfg(feature = "macros")]
 mod macros;
-
-#[cfg(feature = "macros")]
-pub use include_dir::include_dir;
 
 // Re-export vek under brainrot::vek
 #[cfg(feature = "vek")]

@@ -6,13 +6,14 @@ version    = "0.1.0"
 
 
 [features]
-default = []
+default = ["macros", "path", "tuples"]
 
 angle     = []
 bevy      = ["dep:bevy_ecs"]
 camera_3d = ["angle", "vek"]
 convert   = ["dep:egui", "dep:mint", "dep:winit", "egui/mint", "vek", "winit/mint"]
 macros    = []
+path      = ["dep:typed-path"]
 shader    = ["dep:wgpu"]
 speed     = ["vek"]
 texture   = ["dep:image", "dep:wgpu"]
@@ -27,11 +28,12 @@ rstest = "0.21.0"
 
 
 [dependencies]
-bevy_ecs = { version = "=0.13.2", optional = true }
-image    = { version = "0.25", default-features = false, optional = true }
-mint     = { version = "0.5", optional = true }
-vek      = { version = "0.17", features = ["bytemuck", "mint", "rgb", "rgba", "serde", "uv", "uvw"], optional = true }
-wgpu     = { version = "=0.19.1", optional = true }
+bevy_ecs   = { version = "=0.13.2", optional = true }
+image      = { version = "0.25", default-features = false, optional = true }
+mint       = { version = "0.5", optional = true }
+typed-path = { version = "0.9.0", optional = true }
+vek        = { version = "0.17", features = ["bytemuck", "mint", "rgb", "rgba", "serde", "uv", "uvw"], optional = true }
+wgpu       = { version = "=0.19.1", optional = true }
 
 egui  = { version = "0.27", optional = true }
 winit = { version = "0.29", optional = true }

@@ -1,7 +1,49 @@
+#[cfg(feature = "path")]
 #[macro_export]
-macro_rules! src {
-	($file:expr) => {
-		concat!(env!("CARGO_MANIFEST_DIR"), "/src/", $file)
+macro_rules! path {
+	($path:expr) => {
+		typed_path::Utf8TypedPath::derive($path).to_path_buf()
+	};
+}
+
+#[cfg(feature = "path")]
+#[macro_export]
+macro_rules! native_pathbuf {
+	($path:expr) => {
+		TryInto::<PathBuf>::try_into($path)
+	};
+}
+
+#[cfg(feature = "path")]
+#[macro_export]
+macro_rules! native_path {
+	($path:expr) => {
+		TryInto::<Path>::try_into($path)
+	};
+}
+
+// TODO cleanup into their directories
+
+#[cfg(feature = "path")]
+#[macro_export]
+macro_rules! src_path {
+	() => {
+		path!(env!("CARGO_MANIFEST_DIR")).join("src")
+	};
+}
+
+#[cfg(feature = "path")]
+#[macro_export]
+macro_rules! rooted_path {
+	($path:expr) => {
+		Utf8UnixPath::new("/").join($path).normalize()
+	};
+}
+
+#[macro_export]
+macro_rules! path_bytes {
+	($path:expr) => {
+		typed_path::TypedPath::from($path)
 	};
 }
 
@@ -16,37 +58,11 @@ macro_rules! include_shader {
 	};
 }
 
-#[cfg(feature = "shader")]
-#[macro_export]
-macro_rules! build_shader_dir {
-	($dir:expr) => {{
-		use std::env;
-		use std::fs::read_to_string;
-		use std::fs::File;
-		use std::io::{BufWriter, Write};
-		use std::path::Path;
-
-		// Tell Cargo that if the directory changes, to rerun this build script.
-		println!(concat!("cargo::rerun-if-changed=", $dir));
-
-		let path = Path::new(&env::var("OUT_DIR").unwrap()).join("shader_dir.rs");
-		let mut out_file = BufWriter::new(File::create(&path).unwrap());
-
-		let shader_files = glob::glob(concat!(env!("CARGO_MANIFEST_DIR"), "/", $dir, "**/*")).unwrap();
-		let mut map = phf_codegen::Map::<String>::new();
-
-		for entry in shader_files {
-			let path_buf = if let Ok(path) = entry { path } else { continue };
-
-			let source = read_to_string(&path_buf).unwrap();
-			let path = path_buf.to_str().unwrap().to_owned();
-
-			map.entry(path, "\"" + &source + "\"");
-		}
-
-		write!(&mut out_file, "{};", map.build()).unwrap();
-	}};
-}
+// #[cfg(feature = "shader")]
+// #[macro_export]
+// macro_rules! build_shader_dir {
+// 	($dir:expr) => {};
+// }
 
 #[cfg(feature = "shader")]
 #[macro_export]
