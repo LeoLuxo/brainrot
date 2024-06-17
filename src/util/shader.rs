@@ -6,6 +6,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::{collections::HashSet, fs::read_to_string, ops::Range};
 
+use egui::ahash::HashMap;
+use hashlink::{LinkedHashMap, LinkedHashSet};
 use regex::Regex;
 use typed_path::{Utf8Path, Utf8UnixPath, Utf8UnixPathBuf};
 use wgpu::ShaderSource;
@@ -97,14 +99,17 @@ pub type ShaderMap = crate::lib_crates::phf::Map<&'static str, &'static str>;
 #[derive(Clone, Debug)]
 pub struct ShaderBuilder<'a> {
 	shader_map: &'a ShaderMap,
-	included_files: HashSet<Utf8UnixPathBuf>,
+	include_directives: LinkedHashSet<Utf8UnixPathBuf>,
+	// TODO: Add define directive
+	// #define POO vec3f(0)
+	// define_directives: LinkedHashMap<String, String>,
 }
 
 impl<'a> ShaderBuilder<'a> {
 	pub fn new(shader_map: &'a ShaderMap) -> Self {
 		Self {
 			shader_map,
-			included_files: HashSet::default(),
+			include_directives: LinkedHashSet::default(),
 		}
 	}
 
@@ -112,7 +117,7 @@ impl<'a> ShaderBuilder<'a> {
 	where
 		P: AsRef<Utf8UnixPath>,
 	{
-		self.included_files.insert(rooted_path!(file));
+		self.include_directives.insert(rooted_path!(file));
 		self
 	}
 
@@ -133,7 +138,7 @@ impl<'a> ShaderBuilder<'a> {
 
 		let mut source = String::new();
 
-		for file in self.included_files {
+		for file in self.include_directives {
 			let included_source = Self::build_individual_source(file, &mut blacklist, shader_map)?;
 			source.push_str(&included_source);
 		}
