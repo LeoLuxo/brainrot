@@ -58,12 +58,6 @@ macro_rules! include_shader {
 	};
 }
 
-// #[cfg(feature = "shader")]
-// #[macro_export]
-// macro_rules! build_shader_dir {
-// 	($dir:expr) => {};
-// }
-
 #[cfg(feature = "shader")]
 #[macro_export]
 macro_rules! include_shader_dir {
