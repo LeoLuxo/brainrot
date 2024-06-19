@@ -95,33 +95,79 @@ macro_rules! include_shader_map {
 
 pub type ShaderMap = crate::lib_crates::phf::Map<&'static str, &'static str>;
 
-#[derive(Clone, Debug)]
-pub struct ShaderBuilder<'a> {
-	shader_map: &'a ShaderMap,
-	include_directives: LinkedHashSet<Utf8UnixPathBuf>,
+#[derive(Hash, Debug, Clone, Eq, PartialEq)]
+pub enum Shader {
+	Source(String),
+	Path(Utf8UnixPathBuf),
+	Builder(ShaderBuilder),
+}
+
+impl Shader {
+	pub fn get_parent(&self) -> Utf8UnixPathBuf {
+		match self {
+			Shader::Source(_) => root!(),
+			Shader::Path(path) => path.parent().map(|x| x.to_owned()).unwrap_or(root!()),
+			Shader::Builder(_) => root!(),
+		}
+	}
+
+	pub fn as_source(self, shader_map: &ShaderMap) -> Result<String> {
+		match self {
+			Shader::Source(source) => Ok(source),
+			Shader::Path(path) => Self::get_path_source(path, shader_map),
+			Shader::Builder(builder) => builder.build_source(shader_map),
+		}
+	}
+
+	fn get_path_source(path: Utf8UnixPathBuf, shader_map: &ShaderMap) -> Result<String> {
+		let path = rooted_path!(path);
+
+		// Get the source from the shader map
+		let source_ref = shader_map.get(path.as_str()).ok_or(anyhow!("File not found"))?;
+		let source = (*source_ref).to_owned();
+
+		Ok(source)
+	}
+}
+
+impl<P> From<P> for Shader
+where
+	P: Into<Utf8UnixPathBuf>,
+{
+	fn from(value: P) -> Self {
+		Self::Path(value.into())
+	}
+}
+
+impl From<ShaderBuilder> for Shader {
+	fn from(value: ShaderBuilder) -> Self {
+		Self::Builder(value)
+	}
+}
+
+#[derive(Clone, Debug, Default, Hash, Eq, PartialEq)]
+pub struct ShaderBuilder {
+	include_directives: LinkedHashSet<Shader>,
 	// TODO: Add define directive
 	// #define POO vec3f(0)
 	// define_directives: LinkedHashMap<String, String>,
 }
 
-impl<'a> ShaderBuilder<'a> {
-	pub fn new(shader_map: &'a ShaderMap) -> Self {
-		Self {
-			shader_map,
-			include_directives: LinkedHashSet::default(),
-		}
+impl ShaderBuilder {
+	pub fn new() -> Self {
+		Self::default()
 	}
 
-	pub fn include<P>(mut self, file: P) -> Self
+	pub fn include<S>(mut self, shader: S) -> Self
 	where
-		P: AsRef<Utf8UnixPath>,
+		S: Into<Shader>,
 	{
-		self.include_directives.insert(rooted_path!(file));
+		self.include_directives.insert(shader.into());
 		self
 	}
 
-	pub fn build(self, device: &Device) -> Result<ShaderModule> {
-		let source = self.build_source()?;
+	pub fn build(self, shader_map: &ShaderMap, device: &Device) -> Result<ShaderModule> {
+		let source = self.build_source(shader_map)?;
 
 		let shader_module = device.create_shader_module(ShaderModuleDescriptor {
 			label: None,
@@ -131,14 +177,13 @@ impl<'a> ShaderBuilder<'a> {
 		Ok(shader_module)
 	}
 
-	pub fn build_source(self) -> Result<String> {
+	pub fn build_source(self, shader_map: &ShaderMap) -> Result<String> {
 		let mut blacklist = HashSet::new();
-		let shader_map = self.shader_map;
 
 		let mut source = String::new();
 
-		for file in self.include_directives {
-			let included_source = Self::build_individual_source(file, &mut blacklist, shader_map)?;
+		for shader in self.include_directives {
+			let included_source = Self::build_individual_source(shader, &mut blacklist, shader_map)?;
 			source.push_str(&included_source);
 		}
 
@@ -146,30 +191,29 @@ impl<'a> ShaderBuilder<'a> {
 	}
 
 	fn build_individual_source(
-		file: Utf8UnixPathBuf,
-		blacklist: &mut HashSet<Utf8UnixPathBuf>,
+		shader: Shader,
+		blacklist: &mut HashSet<Shader>,
 		shader_map: &ShaderMap,
 	) -> Result<String> {
 		// Check that the file wasn't already included
-		if blacklist.contains(&file) {
+		if blacklist.contains(&shader) {
 			// Not an error, just includes empty source
 			return Ok("".to_string());
 		}
 
+		// Blacklist the shader from including it anymore
+		(*blacklist).insert(shader.clone());
+
 		// The path of the current shader file
-		let parent_path = file.parent().map(|x| x.to_owned()).unwrap_or(rooted_path!(""));
+		let parent_path = shader.get_parent();
 
-		// Get the source from the shader map
-		let source_ref = shader_map.get(file.as_str()).ok_or(anyhow!("File not found"))?;
-		let mut source = (*source_ref).to_owned();
-
-		// Blacklist the file from including it anymore
-		(*blacklist).insert(file);
+		// Get the source from the shader
+		let mut source = shader.as_source(shader_map)?;
 
 		let mut byte_offset: isize = 0;
 		let mut includes = Vec::<(String, Range<usize>)>::new();
 
-		// Find all `#include "path/to/shader.wgsl"` in the file
+		// Find all `#include "path/to/shader.wgsl"` in the source
 		let re = Regex::new(r#"(?m)^#include "(.+?)"$"#).unwrap();
 
 		for caps in re.captures_iter(&source) {
@@ -192,7 +236,7 @@ impl<'a> ShaderBuilder<'a> {
 			let path_absolute = rooted_path!(parent_path.join(path_relative));
 
 			// Recursively build the source of the included file
-			let source_to_include = Self::build_individual_source(path_absolute, blacklist, shader_map)?;
+			let source_to_include = Self::build_individual_source(path_absolute.into(), blacklist, shader_map)?;
 
 			// Get the byte-size of the file to be inserted, to shift the other insertions afterwards
 			byte_offset += (source_to_include.len() as isize) - (range.len() as isize);

@@ -36,3 +36,10 @@ macro_rules! rooted_path {
 			.normalize()
 	};
 }
+
+#[macro_export]
+macro_rules! root {
+	() => {
+		$crate::lib_crates::typed_path::Utf8UnixPath::new("/").normalize()
+	};
+}
