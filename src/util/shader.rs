@@ -8,7 +8,10 @@ use std::{collections::HashSet, fs::read_to_string, ops::Range};
 
 use hashlink::{LinkedHashMap, LinkedHashSet};
 use regex::Regex;
-use typed_path::{Utf8Path, Utf8UnixPath, Utf8UnixPathBuf};
+use typed_path::{
+	TypedPath, TypedPathBuf, UnixPath, UnixPathBuf, Utf8Path, Utf8TypedPath, Utf8TypedPathBuf, Utf8UnixPath,
+	Utf8UnixPathBuf, Utf8WindowsPath, Utf8WindowsPathBuf, WindowsPath, WindowsPathBuf,
+};
 use wgpu::ShaderSource;
 use wgpu::{Device, ShaderModule, ShaderModuleDescriptor};
 
@@ -95,6 +98,20 @@ macro_rules! include_shader_source_map {
 
 pub type ShaderSourceMap = crate::lib_crates::phf::Map<&'static str, &'static str>;
 
+trait ShaderPath {}
+impl ShaderPath for TypedPath<'_> {}
+impl ShaderPath for TypedPathBuf {}
+impl ShaderPath for Utf8TypedPath<'_> {}
+impl ShaderPath for Utf8TypedPathBuf {}
+impl ShaderPath for UnixPath {}
+impl ShaderPath for UnixPathBuf {}
+impl ShaderPath for Utf8UnixPath {}
+impl ShaderPath for Utf8UnixPathBuf {}
+impl ShaderPath for WindowsPath {}
+impl ShaderPath for WindowsPathBuf {}
+impl ShaderPath for Utf8WindowsPath {}
+impl ShaderPath for Utf8WindowsPathBuf {}
+
 #[derive(Hash, Debug, Clone, Eq, PartialEq)]
 pub enum Shader {
 	Source(String),
@@ -111,12 +128,66 @@ impl Shader {
 		}
 	}
 
-	pub fn as_source(self, shader_source_map: &ShaderSourceMap) -> Result<String> {
+	pub fn build_source(self, shader_source_map: &ShaderSourceMap) -> Result<String> {
 		match self {
 			Shader::Source(source) => Ok(source),
 			Shader::Path(path) => Self::get_path_source(path, shader_source_map),
 			Shader::Builder(builder) => builder.build_source(shader_source_map),
 		}
+	}
+
+	fn process_source(self, blacklist: &mut HashSet<Shader>, shader_source_map: &ShaderSourceMap) -> Result<String> {
+		// Check that the file wasn't already included
+		if blacklist.contains(&self) {
+			// Not an error, just includes empty source
+			return Ok("".to_string());
+		}
+
+		// Blacklist the shader from including it anymore
+		(*blacklist).insert(self.clone());
+
+		// The path of the current shader file
+		let parent_path = self.get_parent();
+
+		// Get the source from the shader
+		let mut source = self.build_source(shader_source_map)?;
+
+		let mut byte_offset: isize = 0;
+		let mut includes = Vec::<(String, Range<usize>)>::new();
+
+		// Find all `#include "path/to/shader.wgsl"` in the source
+		let re = Regex::new(r#"(?m)^#include "(.+?)"$"#).unwrap();
+
+		for caps in re.captures_iter(&source) {
+			// The bytes that the `#include "path/to/shader.wgsl"` statement occupies
+			let range = caps.get(0).unwrap().range();
+			// The `path/to/shader.wgsl` part
+			let path_str = caps.get(1).unwrap().as_str().to_owned();
+			includes.push((path_str, range));
+		}
+
+		// Replace the include statements in the source with the actual source of each file
+		for (path_str, range) in includes {
+			// Offset the range by byte_offset
+			let range = (range.start as isize + byte_offset) as usize..(range.end as isize + byte_offset) as usize;
+
+			// Fix up the path
+			let path_relative: Utf8UnixPathBuf = path!(&path_str)
+				.try_into()
+				.or(Err(anyhow!("Invalid file `{}`", path_str)))?;
+			let path_absolute = rooted_path!(parent_path.join(path_relative));
+
+			// Recursively build the source of the included file
+			let source_to_include = Self::process_source(path_absolute.into(), blacklist, shader_source_map)?;
+
+			// Get the byte-size of the file to be inserted, to shift the other insertions afterwards
+			byte_offset += (source_to_include.len() as isize) - (range.len() as isize);
+
+			// Replace the whole range with the included file source
+			source.replace_range(range, &source_to_include);
+		}
+
+		Ok(source)
 	}
 
 	fn get_path_source(path: Utf8UnixPathBuf, shader_source_map: &ShaderSourceMap) -> Result<String> {
@@ -130,9 +201,21 @@ impl Shader {
 	}
 }
 
+impl From<String> for Shader {
+	fn from(value: String) -> Self {
+		Self::Source(value)
+	}
+}
+
+impl From<&str> for Shader {
+	fn from(value: &str) -> Self {
+		Self::Source(value.to_owned())
+	}
+}
+
 impl<P> From<P> for Shader
 where
-	P: Into<Utf8UnixPathBuf>,
+	P: Into<Utf8UnixPathBuf> + ShaderPath,
 {
 	fn from(value: P) -> Self {
 		Self::Path(value.into())
@@ -166,6 +249,13 @@ impl ShaderBuilder {
 		self
 	}
 
+	pub fn include_path<P>(self, path: P) -> Self
+	where
+		P: Into<Utf8UnixPathBuf>,
+	{
+		self.include(Shader::Path(path.into()))
+	}
+
 	pub fn build(self, shader_source_map: &ShaderSourceMap, device: &Device) -> Result<ShaderModule> {
 		let source = self.build_source(shader_source_map)?;
 
@@ -183,66 +273,8 @@ impl ShaderBuilder {
 		let mut source = String::new();
 
 		for shader in self.include_directives {
-			let included_source = Self::build_individual_source(shader, &mut blacklist, shader_source_map)?;
+			let included_source = shader.process_source(&mut blacklist, shader_source_map)?;
 			source.push_str(&included_source);
-		}
-
-		Ok(source)
-	}
-
-	fn build_individual_source(
-		shader: Shader,
-		blacklist: &mut HashSet<Shader>,
-		shader_source_map: &ShaderSourceMap,
-	) -> Result<String> {
-		// Check that the file wasn't already included
-		if blacklist.contains(&shader) {
-			// Not an error, just includes empty source
-			return Ok("".to_string());
-		}
-
-		// Blacklist the shader from including it anymore
-		(*blacklist).insert(shader.clone());
-
-		// The path of the current shader file
-		let parent_path = shader.get_parent();
-
-		// Get the source from the shader
-		let mut source = shader.as_source(shader_source_map)?;
-
-		let mut byte_offset: isize = 0;
-		let mut includes = Vec::<(String, Range<usize>)>::new();
-
-		// Find all `#include "path/to/shader.wgsl"` in the source
-		let re = Regex::new(r#"(?m)^#include "(.+?)"$"#).unwrap();
-
-		for caps in re.captures_iter(&source) {
-			// The bytes that the `#include "path/to/shader.wgsl"` statement occupies
-			let range = caps.get(0).unwrap().range();
-			// The `path/to/shader.wgsl` part
-			let path_str = caps.get(1).unwrap().as_str().to_owned();
-			includes.push((path_str, range));
-		}
-
-		// Replace the include statements in the source with the actual source of each file
-		for (path_str, range) in includes {
-			// Offset the range by byte_offset
-			let range = (range.start as isize + byte_offset) as usize..(range.end as isize + byte_offset) as usize;
-
-			// Fix up the path
-			let path_relative: Utf8UnixPathBuf = path!(&path_str)
-				.try_into()
-				.or(Err(anyhow!("Invalid file `{}`", path_str)))?;
-			let path_absolute = rooted_path!(parent_path.join(path_relative));
-
-			// Recursively build the source of the included file
-			let source_to_include = Self::build_individual_source(path_absolute.into(), blacklist, shader_source_map)?;
-
-			// Get the byte-size of the file to be inserted, to shift the other insertions afterwards
-			byte_offset += (source_to_include.len() as isize) - (range.len() as isize);
-
-			// Replace the whole range with the included file source
-			source.replace_range(range, &source_to_include);
 		}
 
 		Ok(source)
