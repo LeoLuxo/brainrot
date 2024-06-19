@@ -24,7 +24,7 @@ use anyhow::{anyhow, Ok};
 // Macros
 
 #[macro_export]
-macro_rules! build_shader_map {
+macro_rules! build_shader_source_map {
 	($path:expr) => {{
 		use std::{
 			env,
@@ -37,7 +37,7 @@ macro_rules! build_shader_map {
 
 		let dir = path!($path);
 		let absolute_dir = path!(env!("CARGO_MANIFEST_DIR")).join(&dir);
-		let destination = path!("shader_map.rs");
+		let destination = path!("shader_source_map.rs");
 
 		// Tell Cargo that if the directory changes, to rerun this build script.
 		println!("cargo::rerun-if-changed={}", dir);
@@ -81,9 +81,9 @@ macro_rules! build_shader_map {
 }
 
 #[macro_export]
-macro_rules! include_shader_map {
+macro_rules! include_shader_source_map {
 	() => {{
-		include!(concat!(env!("OUT_DIR"), "/shader_map.rs"))
+		include!(concat!(env!("OUT_DIR"), "/shader_source_map.rs"))
 	}};
 }
 
@@ -93,7 +93,7 @@ macro_rules! include_shader_map {
 --------------------------------------------------------------------------------
 */
 
-pub type ShaderMap = crate::lib_crates::phf::Map<&'static str, &'static str>;
+pub type ShaderSourceMap = crate::lib_crates::phf::Map<&'static str, &'static str>;
 
 #[derive(Hash, Debug, Clone, Eq, PartialEq)]
 pub enum Shader {
@@ -111,19 +111,19 @@ impl Shader {
 		}
 	}
 
-	pub fn as_source(self, shader_map: &ShaderMap) -> Result<String> {
+	pub fn as_source(self, shader_source_map: &ShaderSourceMap) -> Result<String> {
 		match self {
 			Shader::Source(source) => Ok(source),
-			Shader::Path(path) => Self::get_path_source(path, shader_map),
-			Shader::Builder(builder) => builder.build_source(shader_map),
+			Shader::Path(path) => Self::get_path_source(path, shader_source_map),
+			Shader::Builder(builder) => builder.build_source(shader_source_map),
 		}
 	}
 
-	fn get_path_source(path: Utf8UnixPathBuf, shader_map: &ShaderMap) -> Result<String> {
+	fn get_path_source(path: Utf8UnixPathBuf, shader_source_map: &ShaderSourceMap) -> Result<String> {
 		let path = rooted_path!(path);
 
 		// Get the source from the shader map
-		let source_ref = shader_map.get(path.as_str()).ok_or(anyhow!("File not found"))?;
+		let source_ref = shader_source_map.get(path.as_str()).ok_or(anyhow!("File not found"))?;
 		let source = (*source_ref).to_owned();
 
 		Ok(source)
@@ -166,8 +166,8 @@ impl ShaderBuilder {
 		self
 	}
 
-	pub fn build(self, shader_map: &ShaderMap, device: &Device) -> Result<ShaderModule> {
-		let source = self.build_source(shader_map)?;
+	pub fn build(self, shader_source_map: &ShaderSourceMap, device: &Device) -> Result<ShaderModule> {
+		let source = self.build_source(shader_source_map)?;
 
 		let shader_module = device.create_shader_module(ShaderModuleDescriptor {
 			label: None,
@@ -177,13 +177,13 @@ impl ShaderBuilder {
 		Ok(shader_module)
 	}
 
-	pub fn build_source(self, shader_map: &ShaderMap) -> Result<String> {
+	pub fn build_source(self, shader_source_map: &ShaderSourceMap) -> Result<String> {
 		let mut blacklist = HashSet::new();
 
 		let mut source = String::new();
 
 		for shader in self.include_directives {
-			let included_source = Self::build_individual_source(shader, &mut blacklist, shader_map)?;
+			let included_source = Self::build_individual_source(shader, &mut blacklist, shader_source_map)?;
 			source.push_str(&included_source);
 		}
 
@@ -193,7 +193,7 @@ impl ShaderBuilder {
 	fn build_individual_source(
 		shader: Shader,
 		blacklist: &mut HashSet<Shader>,
-		shader_map: &ShaderMap,
+		shader_source_map: &ShaderSourceMap,
 	) -> Result<String> {
 		// Check that the file wasn't already included
 		if blacklist.contains(&shader) {
@@ -208,7 +208,7 @@ impl ShaderBuilder {
 		let parent_path = shader.get_parent();
 
 		// Get the source from the shader
-		let mut source = shader.as_source(shader_map)?;
+		let mut source = shader.as_source(shader_source_map)?;
 
 		let mut byte_offset: isize = 0;
 		let mut includes = Vec::<(String, Range<usize>)>::new();
@@ -236,7 +236,7 @@ impl ShaderBuilder {
 			let path_absolute = rooted_path!(parent_path.join(path_relative));
 
 			// Recursively build the source of the included file
-			let source_to_include = Self::build_individual_source(path_absolute.into(), blacklist, shader_map)?;
+			let source_to_include = Self::build_individual_source(path_absolute.into(), blacklist, shader_source_map)?;
 
 			// Get the byte-size of the file to be inserted, to shift the other insertions afterwards
 			byte_offset += (source_to_include.len() as isize) - (range.len() as isize);
