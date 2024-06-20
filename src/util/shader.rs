@@ -232,9 +232,9 @@ impl From<ShaderBuilder> for Shader {
 #[derive(Clone, Debug, Default, Hash, Eq, PartialEq)]
 pub struct ShaderBuilder {
 	include_directives: LinkedHashSet<Shader>,
+	define_directives: LinkedHashMap<String, String>,
 	// TODO: Add define directive
 	// #define POO vec3f(0)
-	// define_directives: LinkedHashMap<String, String>,
 }
 
 impl ShaderBuilder {
@@ -257,6 +257,15 @@ impl ShaderBuilder {
 		self.include(Shader::Path(path.into()))
 	}
 
+	pub fn define<K, V>(mut self, key: K, value: V) -> Self
+	where
+		K: Into<String>,
+		V: Into<String>,
+	{
+		self.define_directives.insert(key.into(), value.into());
+		self
+	}
+
 	pub fn build(self, shader_source_map: &ShaderSourceMap, device: &Device) -> Result<ShaderModule> {
 		let source = self.build_source(shader_source_map)?;
 
@@ -268,16 +277,58 @@ impl ShaderBuilder {
 		Ok(shader_module)
 	}
 
-	pub fn build_source(self, shader_source_map: &ShaderSourceMap) -> Result<String> {
-		let mut blacklist = HashSet::new();
+	pub fn build_source(mut self, shader_source_map: &ShaderSourceMap) -> Result<String> {
+		let mut include_blacklist = HashSet::new();
 
 		let mut source = String::new();
 
-		for shader in self.include_directives {
-			let included_source = shader.process_source(&mut blacklist, shader_source_map)?;
+		for shader in self.include_directives.drain() {
+			let included_source = shader.process_source(&mut include_blacklist, shader_source_map)?;
 			source.push_str(&included_source);
 		}
 
+		self.define_directives
+			.extend(Self::process_define_directives(&mut source));
+		source = self.apply_define_directives(source);
+
 		Ok(source)
+	}
+
+	fn process_define_directives(source: &mut String) -> LinkedHashMap<String, String> {
+		let mut define_directives = LinkedHashMap::<String, String>::new();
+
+		// Find all `#define KEY value` in the source
+		let re = Regex::new(r#"(?m)^#define (.+?) (.+?)$"#).unwrap();
+
+		let mut ranges = Vec::<Range<usize>>::new();
+		for caps in re.captures_iter(source) {
+			// The bytes that the `#define ...` statement occupies
+			let range = caps.get(0).unwrap().range();
+			ranges.push(range);
+
+			let key = caps.get(1).unwrap().as_str().to_owned();
+			let value = caps.get(2).unwrap().as_str().to_owned();
+			define_directives.insert(key, value);
+		}
+
+		// Delete the directives from the source string
+		let mut offset: isize = 0;
+		for range in ranges {
+			let range = (range.start as isize + offset) as usize..(range.end as isize + offset) as usize;
+
+			// Decrease offset since we're deleting sections of text
+			offset -= range.len() as isize;
+
+			source.replace_range(range, "");
+		}
+
+		define_directives
+	}
+
+	fn apply_define_directives(&mut self, mut source: String) -> String {
+		for (key, value) in &self.define_directives {
+			source = source.replace(key, value);
+		}
+		source
 	}
 }
