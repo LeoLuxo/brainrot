@@ -215,10 +215,11 @@ impl From<&str> for Shader {
 
 impl<P> From<P> for Shader
 where
-	P: Into<Utf8UnixPathBuf> + ShaderPath,
+	P: TryInto<Utf8UnixPathBuf> + ShaderPath,
 {
 	fn from(value: P) -> Self {
-		Self::Path(value.into())
+		// The case where a path is valid as Windows path but not as Unix is so rare that it's okay to unwrap here instead of delegating the error to ShaderBuilder.build
+		Self::Path(value.try_into().or(Err(anyhow!("Invalid shader path"))).unwrap())
 	}
 }
 
