@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::mem;
+
 use bevy_ecs::{
 	component::Component,
 	schedule::{IntoSystemConfigs, IntoSystemSetConfigs, Schedule, ScheduleBuildSettings, ScheduleLabel, Schedules},
@@ -16,27 +18,30 @@ use super::{plugin::Plugin, *};
 */
 
 /// A container of app logic and data.
-/// This is a personal partial re-implementation of [`bevy_app::app::App`] from `bevy_app`
+/// This is a personal partial re-implementation of [`bevy_app::app::App`] from
+/// `bevy_app`
 ///
-/// Bundles together the necessary elements like [`World`] and [`Schedule`] to create
-/// a bevy ECS-based application. It also stores a pointer to a [runner function](Self::set_runner).
-/// The runner is responsible for managing the application's event loop and applying the
-/// [`Schedule`] to the [`World`] to drive application logic.
+/// Bundles together the necessary elements like [`World`] and [`Schedule`] to
+/// create a bevy ECS-based application. It also stores a pointer to a [runner
+/// function](Self::set_runner). The runner is responsible for managing the
+/// application's event loop and applying the [`Schedule`] to the [`World`] to
+/// drive application logic.
 pub struct App {
 	/// The main ECS [`World`] of the [`App`].
 	/// This stores and provides access to all the main data of the app.
 	/// The systems of the [`App`] will run using this [`World`].
 	pub world: World,
 
-	/// The [runner function](Self::set_runner) is primarily responsible for managing
-	/// the app's event loop and advancing the [`Schedule`].
+	/// The [runner function](Self::set_runner) is primarily responsible for
+	/// managing the app's event loop and advancing the [`Schedule`].
 	// Send bound is required to make App Send
 	runner: Option<Box<dyn FnOnce(App) + Send>>,
 
 	/// The vector where plugins are stored for running functions on them
 	plugin_registry: Vec<Box<dyn Plugin>>,
 
-	/// A private counter to prevent incorrect calls to [`App::run()`] from [`Plugin::build()`]
+	/// A private counter to prevent incorrect calls to [`App::run()`] from
+	/// [`Plugin::build()`]
 	building_plugin_depth: usize,
 
 	/// The state of the Plugin initialization process
@@ -94,23 +99,27 @@ impl App {
 	/// # `run()` might not return
 	///
 	/// Calls to [`App::run()`] might never return.
-	/// This is completely dependant on what the [runner function](Self::set_runner) does.
-	/// If it works like a windowed app using an *event loop* and then terminates the app when a certain event is fired,
-	/// [`App::run()`] will probably not return properly.
+	/// This is completely dependant on what the [runner
+	/// function](Self::set_runner) does. If it works like a windowed app using
+	/// an *event loop* and then terminates the app when a certain event is
+	/// fired, [`App::run()`] will probably not return properly.
 	///
 	/// # Panics
 	///
-	/// Panics if called from `Plugin::build()`, because it would prevent other plugins to properly build.
+	/// Panics if called from `Plugin::build()`, because it would prevent other
+	/// plugins to properly build.
 	pub fn run(&mut self) {
-		// The way I understand this, we're taking ownership of self so that we can pass it to the runner as fully owned
-		let mut app = std::mem::take(self);
+		// The way I understand this, we're taking ownership of self so that we can pass
+		// it to the runner as fully owned
+		let mut app = mem::take(self);
 
 		assert!(
 			app.building_plugin_depth == 0,
 			"App::run() was called from within Plugin::build(), which is not allowed."
 		);
 
-		// Also make sure that the runner cannot call the runner again (well, "itself" I guess)
+		// Also make sure that the runner cannot call the runner again (well, "itself" I
+		// guess)
 		let runner = app
 			.runner
 			.take()
@@ -136,11 +145,12 @@ impl App {
 		}
 	}
 
-	/// Run [`Plugin::finish`] for each plugin. This should usually be called by the event loop / runner once all
-	/// plugins are ready.
+	/// Run [`Plugin::finish`] for each plugin. This should usually be called by
+	/// the event loop / runner once all plugins are ready.
 	pub fn finish(&mut self) {
-		// temporarily remove the plugin registry to run each plugin's setup function on app.
-		let plugin_registry = std::mem::take(&mut self.plugin_registry);
+		// temporarily remove the plugin registry to run each plugin's setup function on
+		// app.
+		let plugin_registry = mem::take(&mut self.plugin_registry);
 		for plugin in &plugin_registry {
 			plugin.finish(self);
 		}
@@ -148,11 +158,12 @@ impl App {
 		self.plugins_state = PluginsState::Finished;
 	}
 
-	/// Run [`Plugin::cleanup`] for each plugin. This should usually be called by the event loop / runner after
-	/// [`App::finish`].
+	/// Run [`Plugin::cleanup`] for each plugin. This should usually be called
+	/// by the event loop / runner after [`App::finish`].
 	pub fn cleanup(&mut self) {
-		// temporarily remove the plugin registry to run each plugin's setup function on app.
-		let plugin_registry = std::mem::take(&mut self.plugin_registry);
+		// temporarily remove the plugin registry to run each plugin's setup function on
+		// app.
+		let plugin_registry = mem::take(&mut self.plugin_registry);
 		for plugin in &plugin_registry {
 			plugin.cleanup(self);
 		}
@@ -176,7 +187,8 @@ impl App {
 		self
 	}
 
-	/// Configures a collection of system sets in the default schedule, adding any sets that do not exist.
+	/// Configures a collection of system sets in the default schedule, adding
+	/// any sets that do not exist.
 	#[track_caller]
 	pub fn configure_sets(&mut self, schedule: impl ScheduleLabel, sets: impl IntoSystemSetConfigs) -> &mut Self {
 		let schedule = schedule.intern();
@@ -193,24 +205,28 @@ impl App {
 		self
 	}
 
-	/// Inserts a [`Resource`] to the current [`App`] and overwrites any [`Resource`] previously added of the same type.
+	/// Inserts a [`Resource`] to the current [`App`] and overwrites any
+	/// [`Resource`] previously added of the same type.
 	///
-	/// A [`Resource`] in Bevy represents globally unique data. [`Resource`]s must be added to the Bevy world
-	/// before using them. This happens with [`insert_resource`](Self::insert_resource).
+	/// A [`Resource`] in Bevy represents globally unique data. [`Resource`]s
+	/// must be added to the Bevy world before using them. This happens with
+	/// [`insert_resource`](Self::insert_resource).
 	///
-	/// See [`init_resource`](Self::init_resource) for [`Resource`]s that implement [`Default`] or [`FromWorld`].
+	/// See [`init_resource`](Self::init_resource) for [`Resource`]s that
+	/// implement [`Default`] or [`FromWorld`].
 	pub fn insert_resource<R: Resource>(&mut self, resource: R) -> &mut Self {
 		self.world.insert_resource(resource);
 		self
 	}
 
-	/// Initialize a [`Resource`] with standard starting values by adding it to the [`World`].
+	/// Initialize a [`Resource`] with standard starting values by adding it to
+	/// the [`World`].
 	///
 	/// If the [`Resource`] already exists, nothing happens.
 	///
 	/// The [`Resource`] must implement the [`FromWorld`] trait.
-	/// If the [`Default`] trait is implemented, the [`FromWorld`] trait will use
-	/// the [`Default::default`] method to initialize the [`Resource`].
+	/// If the [`Default`] trait is implemented, the [`FromWorld`] trait will
+	/// use the [`Default::default`] method to initialize the [`Resource`].
 	pub fn init_resource<R: Resource + FromWorld>(&mut self) -> &mut Self {
 		self.world.init_resource::<R>();
 		self
@@ -219,8 +235,8 @@ impl App {
 	/// Sets the function that will be called when the app is run.
 	///
 	/// The runner function `run_fn` is called only once by [`App::run`]. If the
-	/// presence of a main loop in the app is desired, it is the responsibility of the runner
-	/// function to provide it.
+	/// presence of a main loop in the app is desired, it is the responsibility
+	/// of the runner function to provide it.
 	pub fn set_runner(&mut self, run_fn: impl FnOnce(App) + 'static + Send) -> &mut Self {
 		self.runner = Some(Box::new(run_fn));
 		self
@@ -228,8 +244,8 @@ impl App {
 
 	/// Checks if a [`Plugin`] has already been added.
 	///
-	/// This can be used by plugins to check if a plugin they depend upon has already been
-	/// added.
+	/// This can be used by plugins to check if a plugin they depend upon has
+	/// already been added.
 	pub fn is_plugin_added<T>(&self) -> bool
 	where
 		T: Plugin,
@@ -237,11 +253,13 @@ impl App {
 		self.plugin_registry.iter().any(|p| p.downcast_ref::<T>().is_some())
 	}
 
-	/// Returns a vector of references to any plugins of type `T` that have been added.
+	/// Returns a vector of references to any plugins of type `T` that have been
+	/// added.
 	///
 	/// This can be used to read the settings of any already added plugins.
-	/// This vector will be length zero if no plugins of that type have been added.
-	/// If multiple copies of the same plugin are added to the [`App`], they will be listed in insertion order in this vector.
+	/// This vector will be length zero if no plugins of that type have been
+	/// added. If multiple copies of the same plugin are added to the [`App`],
+	/// they will be listed in insertion order in this vector.
 	pub fn get_added_plugins<T>(&self) -> Vec<&T>
 	where
 		T: Plugin,
@@ -260,13 +278,14 @@ impl App {
 			panic!("Plugins cannot be added after App::cleanup() or App::finish() has been called.");
 		}
 
-		// Reserve that position in the plugin registry. if a plugin adds plugins, they will be correctly ordered
+		// Reserve that position in the plugin registry. if a plugin adds plugins, they
+		// will be correctly ordered
 		let plugin_position_in_registry = self.plugin_registry.len();
 		self.plugin_registry.push(Box::new(PlaceholderPlugin));
 
 		self.building_plugin_depth += 1;
 
-		// Immediately all build on the plugin to start its initialization
+		// Immediately call build on the plugin to start its initialization
 		plugin.build(self);
 
 		self.building_plugin_depth -= 1;
@@ -287,7 +306,8 @@ impl App {
 		self
 	}
 
-	/// Initializes a new empty `schedule` to the [`App`] under the provided `label` if it does not exists.
+	/// Initializes a new empty `schedule` to the [`App`] under the provided
+	/// `label` if it does not exists.
 	///
 	/// See [`App::add_schedule`] to pass in a pre-constructed schedule.
 	pub fn init_schedule(&mut self, label: impl ScheduleLabel) -> &mut Self {
@@ -299,17 +319,20 @@ impl App {
 		self
 	}
 
-	/// Gets read-only access to the [`Schedule`] with the provided `label` if it exists.
+	/// Gets read-only access to the [`Schedule`] with the provided `label` if
+	/// it exists.
 	pub fn get_schedule(&self, label: impl ScheduleLabel) -> Option<&Schedule> {
 		let schedules = self.world.get_resource::<Schedules>()?;
 		schedules.get(label)
 	}
 
-	/// Gets read-write access to a [`Schedule`] with the provided `label` if it exists.
+	/// Gets read-write access to a [`Schedule`] with the provided `label` if it
+	/// exists.
 	pub fn get_schedule_mut(&mut self, label: impl ScheduleLabel) -> Option<&mut Schedule> {
 		let schedules = self.world.get_resource_mut::<Schedules>()?;
 		// We need to call .into_inner here to satisfy the borrow checker:
-		// it can reason about reborrows using ordinary references but not the `Mut` smart pointer.
+		// it can reason about reborrows using ordinary references but not the `Mut`
+		// smart pointer.
 		schedules.into_inner().get_mut(label)
 	}
 
@@ -339,21 +362,25 @@ impl App {
 		self
 	}
 
-	/// When doing [ambiguity checking](bevy_ecs::schedule::ScheduleBuildSettings) this
+	/// When doing [ambiguity
+	/// checking](bevy_ecs::schedule::ScheduleBuildSettings) this
 	/// ignores systems that are ambiguous on [`Component`] T.
 	///
-	/// This settings only applies to the main world. To apply this to other worlds call the
-	/// [corresponding method](World::allow_ambiguous_component) on World
+	/// This settings only applies to the main world. To apply this to other
+	/// worlds call the [corresponding
+	/// method](World::allow_ambiguous_component) on World
 	pub fn allow_ambiguous_component<T: Component>(&mut self) -> &mut Self {
 		self.world.allow_ambiguous_component::<T>();
 		self
 	}
 
-	/// When doing [ambiguity checking](bevy_ecs::schedule::ScheduleBuildSettings) this
+	/// When doing [ambiguity
+	/// checking](bevy_ecs::schedule::ScheduleBuildSettings) this
 	/// ignores systems that are ambiguous on [`Resource`] T.
 	///
-	/// This settings only applies to the main world. To apply this to other worlds call the
-	/// [corresponding method](World::allow_ambiguous_resource) on World
+	/// This settings only applies to the main world. To apply this to other
+	/// worlds call the [corresponding method](World::allow_ambiguous_resource)
+	/// on World
 	pub fn allow_ambiguous_resource<T: Resource>(&mut self) -> &mut Self {
 		self.world.allow_ambiguous_resource::<T>();
 		self

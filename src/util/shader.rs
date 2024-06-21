@@ -1,22 +1,26 @@
-use std::borrow::Cow;
-use std::fmt::format;
-use std::hash::Hash;
-use std::ops::Deref;
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::{collections::HashSet, fs::read_to_string, ops::Range};
+use std::{
+	borrow::Cow,
+	collections::{HashMap, HashSet},
+	fmt::format,
+	fs::read_to_string,
+	hash::{DefaultHasher, Hash, Hasher},
+	mem,
+	ops::{Deref, Range},
+	path::PathBuf,
+	str::FromStr,
+};
 
+use anyhow::{anyhow, Ok, Result};
 use hashlink::{LinkedHashMap, LinkedHashSet};
+use rand::{distributions, seq::IteratorRandom, Rng};
 use regex::Regex;
+use replace_with::{replace_with, replace_with_or_abort};
 use typed_path::{
 	TypedPath, TypedPathBuf, UnixPath, UnixPathBuf, Utf8Path, Utf8TypedPath, Utf8TypedPathBuf, Utf8UnixPath,
 	Utf8UnixPathBuf, Utf8WindowsPath, Utf8WindowsPathBuf, WindowsPath, WindowsPathBuf,
 };
-use wgpu::ShaderSource;
-use wgpu::{Device, ShaderModule, ShaderModuleDescriptor};
-
-use anyhow::Result;
-use anyhow::{anyhow, Ok};
+use velcro::{iter, vec};
+use wgpu::{Device, ShaderModule, ShaderModuleDescriptor, ShaderSource};
 
 /*
 --------------------------------------------------------------------------------
@@ -46,7 +50,8 @@ macro_rules! build_shader_source_map {
 		println!("cargo::rerun-if-changed={}", dir);
 
 		let mut map = $crate::lib_crates::phf_codegen::Map::<String>::new();
-		// Set the path that will be printed in the resulting source to the phf re-export (so that it isn't needed in the destination lib)
+		// Set the path that will be printed in the resulting source to the phf
+		// re-export (so that it isn't needed in the destination lib)
 		map.phf_path("brainrot::lib_crates::phf");
 
 		let shader_files = $crate::lib_crates::glob::glob(absolute_dir.join("**/*").as_str()).unwrap();
@@ -71,7 +76,8 @@ macro_rules! build_shader_source_map {
 			let shader_path_rooted = path!("/").join(shader_path_relative);
 			let shader_path_str = shader_path_rooted.into_string();
 
-			// The program source needs to be quoted, as the value of the map is printed *as-is*
+			// The program source needs to be quoted, as the value of the map is printed
+			// *as-is*
 			map.entry(shader_path_str, &format!("r#\"{}\"#", &source));
 		}
 
@@ -128,12 +134,31 @@ impl Shader {
 		}
 	}
 
-	pub fn build_source(self, shader_source_map: &ShaderSourceMap) -> Result<String> {
+	pub fn build(self, shader_source_map: &ShaderSourceMap) -> Result<String> {
 		match self {
 			Shader::Source(source) => Ok(source),
 			Shader::Path(path) => Self::get_path_source(path, shader_source_map),
-			Shader::Builder(builder) => builder.build_source(shader_source_map),
+			Shader::Builder(mut builder) => builder.build_source(shader_source_map),
 		}
+	}
+
+	pub fn obfuscate_fn(&mut self, func_name: &str) -> String {
+		// Generate the obfuscated function name
+		let obfuscated = iter![..('a'..='z'), ..('A'..='Z')]
+			.choose_multiple(&mut rand::thread_rng(), 16)
+			.into_iter()
+			.collect::<String>();
+
+		let from = format!("{}(", func_name);
+		let to = format!("{}(", obfuscated);
+
+		replace_with_or_abort(self, |self_| match self_ {
+			Shader::Source(source) => source.replace(&from, &to).into(),
+			Shader::Path(path) => ShaderBuilder::new().include(path).define(from, to).into(),
+			Shader::Builder(mut builder) => builder.define(from, to).into(),
+		});
+
+		obfuscated
 	}
 
 	fn process_source(self, blacklist: &mut HashSet<Shader>, shader_source_map: &ShaderSourceMap) -> Result<String> {
@@ -150,7 +175,7 @@ impl Shader {
 		let parent_path = self.get_parent();
 
 		// Get the source from the shader
-		let mut source = self.build_source(shader_source_map)?;
+		let mut source = self.build(shader_source_map)?;
 
 		let mut byte_offset: isize = 0;
 		let mut includes = Vec::<(String, Range<usize>)>::new();
@@ -166,7 +191,8 @@ impl Shader {
 			includes.push((path_str, range));
 		}
 
-		// Replace the include statements in the source with the actual source of each file
+		// Replace the include statements in the source with the actual source of each
+		// file
 		for (path_str, range) in includes {
 			// Offset the range by byte_offset
 			let range = (range.start as isize + byte_offset) as usize..(range.end as isize + byte_offset) as usize;
@@ -180,7 +206,8 @@ impl Shader {
 			// Recursively build the source of the included file
 			let source_to_include = Self::process_source(path_absolute.into(), blacklist, shader_source_map)?;
 
-			// Get the byte-size of the file to be inserted, to shift the other insertions afterwards
+			// Get the byte-size of the file to be inserted, to shift the other insertions
+			// afterwards
 			byte_offset += (source_to_include.len() as isize) - (range.len() as isize);
 
 			// Replace the whole range with the included file source
@@ -194,7 +221,9 @@ impl Shader {
 		let path = rooted_path!(path);
 
 		// Get the source from the shader map
-		let source_ref = shader_source_map.get(path.as_str()).ok_or(anyhow!("File not found"))?;
+		let source_ref = shader_source_map
+			.get(path.as_str())
+			.ok_or(anyhow!("File not found: {}", path.as_str()))?;
 		let source = (*source_ref).to_owned();
 
 		Ok(source)
@@ -218,7 +247,9 @@ where
 	P: TryInto<Utf8UnixPathBuf> + ShaderPath,
 {
 	fn from(value: P) -> Self {
-		// The case where a path is valid as Windows path but not as Unix is so rare that it's okay to unwrap here instead of delegating the error to ShaderBuilder.build
+		// The case where a path is valid as Windows path but not as Unix is so rare
+		// that it's okay to unwrap here instead of delegating the error to
+		// ShaderBuilder.build
 		Self::Path(value.try_into().or(Err(anyhow!("Invalid shader path"))).unwrap())
 	}
 }
@@ -229,12 +260,16 @@ impl From<ShaderBuilder> for Shader {
 	}
 }
 
+impl From<&mut ShaderBuilder> for Shader {
+	fn from(value: &mut ShaderBuilder) -> Self {
+		Self::Builder(mem::take(value))
+	}
+}
+
 #[derive(Clone, Debug, Default, Hash, Eq, PartialEq)]
 pub struct ShaderBuilder {
 	include_directives: LinkedHashSet<Shader>,
 	define_directives: LinkedHashMap<String, String>,
-	// TODO: Add define directive
-	// #define POO vec3f(0)
 }
 
 impl ShaderBuilder {
@@ -242,7 +277,7 @@ impl ShaderBuilder {
 		Self::default()
 	}
 
-	pub fn include<S>(mut self, shader: S) -> Self
+	pub fn include<S>(&mut self, shader: S) -> &mut Self
 	where
 		S: Into<Shader>,
 	{
@@ -250,14 +285,14 @@ impl ShaderBuilder {
 		self
 	}
 
-	pub fn include_path<P>(self, path: P) -> Self
+	pub fn include_path<P>(&mut self, path: P) -> &mut Self
 	where
 		P: Into<Utf8UnixPathBuf>,
 	{
 		self.include(Shader::Path(path.into()))
 	}
 
-	pub fn define<K, V>(mut self, key: K, value: V) -> Self
+	pub fn define<K, V>(&mut self, key: K, value: V) -> &mut Self
 	where
 		K: Into<String>,
 		V: Into<String>,
@@ -266,7 +301,7 @@ impl ShaderBuilder {
 		self
 	}
 
-	pub fn build(self, shader_source_map: &ShaderSourceMap, device: &Device) -> Result<ShaderModule> {
+	pub fn build(&mut self, shader_source_map: &ShaderSourceMap, device: &Device) -> Result<ShaderModule> {
 		let source = self.build_source(shader_source_map)?;
 
 		let shader_module = device.create_shader_module(ShaderModuleDescriptor {
@@ -277,19 +312,22 @@ impl ShaderBuilder {
 		Ok(shader_module)
 	}
 
-	pub fn build_source(mut self, shader_source_map: &ShaderSourceMap) -> Result<String> {
+	pub fn build_source(&mut self, shader_source_map: &ShaderSourceMap) -> Result<String> {
+		let mut builder = mem::take(self);
+
 		let mut include_blacklist = HashSet::new();
 
 		let mut source = String::new();
 
-		for shader in self.include_directives.drain() {
+		for shader in builder.include_directives.drain() {
 			let included_source = shader.process_source(&mut include_blacklist, shader_source_map)?;
 			source.push_str(&included_source);
 		}
 
-		self.define_directives
+		builder
+			.define_directives
 			.extend(Self::process_define_directives(&mut source));
-		source = self.apply_define_directives(source);
+		source = builder.apply_define_directives(source);
 
 		Ok(source)
 	}
@@ -326,7 +364,11 @@ impl ShaderBuilder {
 	}
 
 	fn apply_define_directives(&mut self, mut source: String) -> String {
-		for (key, value) in &self.define_directives {
+		let mut directives = self.define_directives.iter().collect::<Vec<_>>();
+		// Sort by reverse size, so from biggest key to smallest key
+		directives.sort_by(|(key1, _), (key2, _)| key2.cmp(key1));
+
+		for (key, value) in directives {
 			source = source.replace(key, value);
 		}
 		source

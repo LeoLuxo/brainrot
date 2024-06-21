@@ -100,12 +100,14 @@ pub use bevy::*;
 #[cfg(test)]
 mod tests {
 
-	use super::*;
-	use crate::util::{Angle, Degrees};
+	use std::f32::consts::FRAC_1_SQRT_2;
+
 	use approx::assert_relative_eq;
 	use rstest::rstest;
-	use std::f32::consts::FRAC_1_SQRT_2;
 	use vek::{num_traits::Float, Vec3};
+
+	use super::*;
+	use crate::util::{Angle, Degrees};
 
 	#[rstest]
 	#[case(Degrees::new(0.).into(),   Vec3::new(0., 0., 1.))]

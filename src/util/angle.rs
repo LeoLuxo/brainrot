@@ -1,11 +1,12 @@
 #![allow(dead_code)]
 
-use paste::paste;
 use std::{
 	fmt::{self, Display, Formatter},
 	marker::PhantomData,
 	ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign},
 };
+
+use paste::paste;
 
 /*
 --------------------------------------------------------------------------------

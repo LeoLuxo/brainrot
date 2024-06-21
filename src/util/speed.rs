@@ -144,8 +144,9 @@ pub trait DurationConverter {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
 	use approx::assert_relative_eq;
+
+	use super::*;
 
 	#[test]
 	fn test_duration_mult() {
