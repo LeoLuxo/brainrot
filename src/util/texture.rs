@@ -5,8 +5,8 @@ use image::GenericImageView;
 use vek::Extent2;
 use wgpu::{
 	naga::back::msl::sampler::Filter, AddressMode, CompareFunction, Device, Extent3d, FilterMode, ImageCopyTexture,
-	ImageDataLayout, Origin3d, Queue, Sampler, SamplerDescriptor, TextureAspect, TextureDescriptor, TextureDimension,
-	TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
+	ImageDataLayout, Origin3d, Queue, Sampler, SamplerBorderColor, SamplerDescriptor, TextureAspect, TextureDescriptor,
+	TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
 };
 
 /*
@@ -158,9 +158,10 @@ impl TextureAsset {
 		let view = texture.create_view(&TextureViewDescriptor::default());
 
 		let sampler = device.create_sampler(&SamplerDescriptor {
-			address_mode_u: AddressMode::ClampToEdge,
-			address_mode_v: AddressMode::ClampToEdge,
-			address_mode_w: AddressMode::ClampToEdge,
+			address_mode_u: AddressMode::ClampToBorder,
+			address_mode_v: AddressMode::ClampToBorder,
+			address_mode_w: AddressMode::ClampToBorder,
+			border_color: Some(SamplerBorderColor::OpaqueBlack),
 			mag_filter: filter_mode,
 			min_filter: filter_mode,
 			mipmap_filter: filter_mode,

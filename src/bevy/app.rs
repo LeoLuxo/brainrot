@@ -171,7 +171,7 @@ impl App {
 		self.plugins_state = PluginsState::Cleaned;
 	}
 
-	/// Adds a system to the given schedule in this app's [`Schedules`].
+	/// Adds systems to the given schedule in this app's [`Schedules`].
 	pub fn add_systems<M>(&mut self, schedule: impl ScheduleLabel, systems: impl IntoSystemConfigs<M>) -> &mut Self {
 		let schedule = schedule.intern();
 		let mut schedules = self.world.resource_mut::<Schedules>();
